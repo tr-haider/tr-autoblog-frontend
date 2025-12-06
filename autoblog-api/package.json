@@ -1,0 +1,6 @@
+{
+  "name": "autoblog-api-vercel",
+  "version": "1.0.0",
+  "description": "Vercel serverless function for AutoBlog AI API",
+  "main": "index.js"
+}
