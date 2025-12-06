@@ -1,6 +1,7 @@
 {
   "name": "blog-ui",
   "version": "1.0.0",
+  "homepage": "/",
   "main": "index.js",
   "scripts": {
     "start": "PORT=3001 react-scripts start",

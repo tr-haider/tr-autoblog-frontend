@@ -1,13 +1,10 @@
 {
-  "version": 2,
-  "name": "autoblog-ai-frontend",
   "buildCommand": "npm run build",
   "outputDirectory": "build",
-  "installCommand": "npm install",
-  "routes": [
+  "rewrites": [
     {
-      "src": "/(.*)",
-      "dest": "/index.html"
+      "source": "/((?!.*\\.).*)$",
+      "destination": "/index.html"
     }
   ]
 }
