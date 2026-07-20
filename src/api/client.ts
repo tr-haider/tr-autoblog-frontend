@@ -18,17 +18,15 @@ export async function fetchSuggestedTopics(): Promise<TrendingTopic[]> {
   return data;
 }
 
-export async function fetchSeparatedLinks(): Promise<{
+export async function fetchSeparatedLinks(refresh = false): Promise<{
   resources: TechnologyRiversLink[];
   blogs: TechnologyRiversLink[];
+  portfolio: TechnologyRiversLink[];
 }> {
-  const { data } = await api.get('/blog-generator/separated-links');
+  const { data } = await api.get('/blog-generator/separated-links', {
+    params: refresh ? { refresh: 'true' } : undefined,
+  });
   return data;
-}
-
-export async function fetchMoreBlogs(page: number): Promise<TechnologyRiversLink[]> {
-  const { data } = await api.get(`/blog-generator/load-more-blogs/${page}`);
-  return data.blogs || [];
 }
 
 export async function generateBlog(

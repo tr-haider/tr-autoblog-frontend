@@ -11,7 +11,7 @@ export interface TechnologyRiversLink {
   title: string;
   url: string;
   category: string;
-  type: 'resource' | 'blog';
+  type: 'resource' | 'blog' | 'portfolio';
   description?: string;
 }
 
@@ -27,13 +27,60 @@ export interface BlogPost {
   createdAt: string;
 }
 
+export interface ResearchQuestion {
+  id: string;
+  question: string;
+  answer: string;
+  source: 'ai' | 'manual';
+}
+
+export interface OutlineHeading {
+  id: string;
+  level: 2 | 3;
+  text: string;
+}
+
+export interface ManualLink {
+  id: string;
+  title: string;
+  url: string;
+}
+
+export interface PortfolioItem {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  url?: string;
+}
+
+export interface Testimonial {
+  id: string;
+  quote: string;
+  name: string;
+  company: string;
+  source: 'sheet' | 'manual';
+}
+
+export interface VideoTestimonial {
+  id: string;
+  title: string;
+  url: string;
+  speaker?: string;
+}
+
+/** Payload accepted by POST /blog-generator/generate */
 export interface BlogGenerationRequest {
   topic: string;
   keywords: string[];
   targetWordCount: number;
-  tone: string;
+  tone: 'professional' | 'casual' | 'technical' | 'executive';
   includeRegulatoryInfo: boolean;
   selectedLinks: string[];
+  metaTitle?: string;
+  metaDescription?: string;
+  angle?: string;
+  cta?: string;
 }
 
 export interface ContentTrackerRow {
@@ -83,3 +130,5 @@ export interface ContentTrackerResponse {
 }
 
 export type AppView = 'generate' | 'preview' | 'tracker';
+
+export const WORKFLOW_STEP_COUNT = 8;

@@ -7,13 +7,9 @@ import {
   Dialog,
   DialogContent,
   DialogTitle,
-  FormControl,
   IconButton,
   InputAdornment,
-  InputLabel,
-  MenuItem,
   Paper,
-  Select,
   Stack,
   Table,
   TableBody,
@@ -33,11 +29,8 @@ import SearchIcon from '@mui/icons-material/Search';
 import CloseIcon from '@mui/icons-material/Close';
 import RocketLaunchOutlinedIcon from '@mui/icons-material/RocketLaunchOutlined';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
-import {
-  fetchContentTrackerMetadata,
-  fetchContentTrackerRows,
-} from '../../api/client';
-import type { ContentTrackerRow, ContentTrackerSummary, SheetTab } from '../../types';
+import { fetchContentTrackerRows } from '../../api/client';
+import type { ContentTrackerRow, ContentTrackerSummary } from '../../types';
 import { StatusChip } from '../shared/StatusChip';
 
 const ROWS_PER_PAGE_OPTIONS = [10, 15, 25, 50];
@@ -48,17 +41,13 @@ interface ContentTrackerViewProps {
 
 export function ContentTrackerView({ onUseForGeneration }: ContentTrackerViewProps) {
   const theme = useTheme();
-  const [tabs, setTabs] = useState<SheetTab[]>([]);
-  const [spreadsheetTitle, setSpreadsheetTitle] = useState('');
-  const [selectedSheet, setSelectedSheet] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(15);
 
   const [rows, setRows] = useState<ContentTrackerRow[]>([]);
-  const [statuses, setStatuses] = useState<string[]>([]);
+  const [sheetName, setSheetName] = useState('');
   const [summary, setSummary] = useState<ContentTrackerSummary>({ published: 0, inProgress: 0 });
   const [totalCount, setTotalCount] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
@@ -75,62 +64,34 @@ export function ContentTrackerView({ onUseForGeneration }: ContentTrackerViewPro
 
   useEffect(() => {
     setPage(0);
-  }, [selectedSheet, statusFilter, debouncedSearch, rowsPerPage]);
+  }, [debouncedSearch, rowsPerPage]);
 
   const loadRows = useCallback(async () => {
-    if (!selectedSheet) return;
     const data = await fetchContentTrackerRows({
-      sheet: selectedSheet,
-      status: statusFilter || undefined,
       search: debouncedSearch || undefined,
       page: page + 1,
       limit: rowsPerPage,
     });
     setRows(data.rows);
-    setStatuses(data.statuses);
+    setSheetName(data.sheet);
     setSummary(data.summary ?? { published: 0, inProgress: 0 });
     setTotalCount(data.total);
     setTotalPages(data.totalPages);
-  }, [selectedSheet, statusFilter, debouncedSearch, page, rowsPerPage]);
+  }, [debouncedSearch, page, rowsPerPage]);
 
   useEffect(() => {
     (async () => {
       setLoading(true);
       setError('');
       try {
-        const meta = await fetchContentTrackerMetadata();
-        setSpreadsheetTitle(meta.title || 'Content Tracker');
-        setTabs(meta.sheets || []);
-        if (meta.sheets?.length) {
-          const blogsTab =
-            meta.sheets.find((s) => s.title?.includes('Blogs - AI'))?.title ||
-            meta.sheets[0].title;
-          setSelectedSheet(blogsTab || '');
-        }
+        await loadRows();
       } catch (e: unknown) {
-        setError(
-          e instanceof Error ? e.message : 'Failed to load spreadsheet metadata',
-        );
+        setError(e instanceof Error ? e.message : 'Failed to load content tracker');
       } finally {
         setLoading(false);
       }
     })();
-  }, []);
-
-  useEffect(() => {
-    if (!selectedSheet) return;
-    (async () => {
-      setRefreshing(true);
-      setError('');
-      try {
-        await loadRows();
-      } catch (e: unknown) {
-        setError(e instanceof Error ? e.message : 'Failed to load rows');
-      } finally {
-        setRefreshing(false);
-      }
-    })();
-  }, [selectedSheet, statusFilter, debouncedSearch, page, rowsPerPage, loadRows]);
+  }, [debouncedSearch, page, rowsPerPage, loadRows]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -169,18 +130,15 @@ export function ContentTrackerView({ onUseForGeneration }: ContentTrackerViewPro
         }}
       >
         <Typography variant="h5" gutterBottom>
-          {spreadsheetTitle}
+          Blogs — AI Mostly
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          Live content pipeline from Google Sheets — filter, inspect, and send topics to the blog generator.
+          {sheetName
+            ? `Showing actionable topics from "${sheetName}" — select a row to generate a blog.`
+            : 'Live content pipeline from Google Sheets — inspect and send topics to the blog generator.'}
         </Typography>
         <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap>
           <Chip label={`${totalCount} topics`} color="primary" variant="outlined" />
-          <Chip
-            label={`${summary.published} published`}
-            sx={{ borderColor: 'success.main', color: 'success.dark' }}
-            variant="outlined"
-          />
           <Chip
             label={`${summary.inProgress} in progress`}
             sx={{ borderColor: 'warning.main', color: 'warning.dark' }}
@@ -195,37 +153,6 @@ export function ContentTrackerView({ onUseForGeneration }: ContentTrackerViewPro
           spacing={2}
           alignItems={{ md: 'center' }}
         >
-          <FormControl size="small" sx={{ minWidth: 220 }}>
-            <InputLabel>Sheet tab</InputLabel>
-            <Select
-              value={selectedSheet}
-              label="Sheet tab"
-              onChange={(e) => setSelectedSheet(e.target.value)}
-            >
-              {tabs.map((tab) => (
-                <MenuItem key={tab.title} value={tab.title}>
-                  {tab.title}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-
-          <FormControl size="small" sx={{ minWidth: 160 }}>
-            <InputLabel>Status</InputLabel>
-            <Select
-              value={statusFilter}
-              label="Status"
-              onChange={(e) => setStatusFilter(e.target.value)}
-            >
-              <MenuItem value="">All statuses</MenuItem>
-              {statuses.map((s) => (
-                <MenuItem key={s} value={s}>
-                  {s}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-
           <TextField
             size="small"
             placeholder="Search title, keywords, writer…"
@@ -259,9 +186,7 @@ export function ContentTrackerView({ onUseForGeneration }: ContentTrackerViewPro
       )}
 
       <TableContainer component={Paper} sx={{ position: 'relative' }}>
-        {refreshing && (
-          <LinearProgressOverlay />
-        )}
+        {refreshing && <LinearProgressOverlay />}
         <Table stickyHeader size="small">
           <TableHead>
             <TableRow>
@@ -277,7 +202,7 @@ export function ContentTrackerView({ onUseForGeneration }: ContentTrackerViewPro
             {rows.length === 0 && !refreshing ? (
               <TableRow>
                 <TableCell colSpan={6} align="center" sx={{ py: 6 }}>
-                  <Typography color="text.secondary">No rows match your filters</Typography>
+                  <Typography color="text.secondary">No topics available</Typography>
                 </TableCell>
               </TableRow>
             ) : (
